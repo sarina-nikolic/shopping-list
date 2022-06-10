@@ -1,25 +1,45 @@
 import { useEffect, useState } from "react";
+import styled from "styled-components";
+import ShoppingItem from "./components/ShoppingItem";
+import Heading from "./components/Heading";
 
-export default function App() {
+function App() {
   const [shoppingList, setShoppingList] = useState([]);
 
   useEffect(() => {
-    loadShoppingList();
-    async function loadShoppingList() {
+    loadShoppinglist();
+    async function loadShoppinglist() {
       try {
         const response = await fetch(
           "https://fetch-me.vercel.app/api/shopping/items"
         );
-        const data = await response.json();
-        setShoppingList(data.results);
+        const data1 = await response.json();
+        setShoppingList(data1.data);
       } catch (error) {
         console.log(error);
       }
     }
   }, []);
+
   return (
-    <div className="App">
-      
-    </div>
+    <AppContainer>
+      <Heading />
+      <ListenContainer>
+        {shoppingList.map((item) => (
+          <ShoppingItem key={item._id} name={item.name.de} />
+        ))}
+      </ListenContainer>
+    </AppContainer>
   );
 }
+
+const AppContainer = styled.div`
+  margin: 1rem;
+`;
+
+const ListenContainer = styled.ul`
+  display: flex;
+  flex-wrap: wrap;
+`;
+
+export default App;
