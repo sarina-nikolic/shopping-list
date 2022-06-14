@@ -1,45 +1,114 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
-import ShoppingItem from "./components/ShoppingItem";
+
 import Heading from "./components/Heading";
 
-function App() {
-  const [shoppingList, setShoppingList] = useState([]);
+export default function App() {
+  const [items, setItems] = useState([]);
+  const [input, setInput] = useState("");
+  const [shoppingList, setShoppingList] = useState(() => {
+    const valueFromLocalStorage = localStorage.getItem("shoppingList");
+    const converted = JSON.parse(valueFromLocalStorage) || [];
+    return converted;
+  });
 
   useEffect(() => {
-    loadShoppinglist();
-    async function loadShoppinglist() {
-      try {
-        const response = await fetch(
-          "https://fetch-me.vercel.app/api/shopping/items"
-        );
-        const data1 = await response.json();
-        setShoppingList(data1.data);
-      } catch (error) {
+    fetch("https://fetch-me.vercel.app/api/shopping/items")
+      .then((data) => data.json())
+      .then((items) => {
+        setItems(items.data);
+      })
+      .catch((error) => {
         console.log(error);
-      }
-    }
+      });
   }, []);
 
+  useEffect(() => {
+    localStorage.setItem("shoppingList", JSON.stringify(shoppingList));
+  }, [shoppingList]);
+
+  function handleOnChange(event) {
+    const newInput = event.target.value;
+    setInput(newInput);
+  }
+
+  function handleOnSaveShoppingItem(item) {
+    const foundShoppingItem = shoppingList.filter(
+      (shoppingItem) => shoppingItem._id === item._id
+    );
+    if (foundShoppingItem.length === 0) {
+      setShoppingList([...shoppingList, item]);
+    }
+  }
+
+  function removeItem(id) {
+    setShoppingList(
+      shoppingList.filter((shoppingItem) => shoppingItem._id !== id)
+    );
+  }
+
+  const foundItems = items.filter((item) =>
+    item.name.en.toLowerCase().includes(input.toLowerCase())
+  );
+
+  console.log(foundItems);
   return (
     <AppContainer>
       <Heading />
-      <ListenContainer>
-        {shoppingList.map((item) => (
-          <ShoppingItem key={item._id} name={item.name.de} />
+
+      <ul>
+        {shoppingList.map((shoppingItem) => (
+          <ShoppingItem key={shoppingItem._id}>
+            <Button onClick={() => removeItem(shoppingItem._id)}>
+              {shoppingItem.name.de}
+            </Button>
+          </ShoppingItem>
         ))}
+      </ul>
+      <Form>
+        <input
+          onChange={handleOnChange}
+          value={input}
+          placeholder="Search here"
+        />{" "}
+      </Form>
+      <ListenContainer>
+        {foundItems.length === 0
+          ? "Oops, we could not find anything."
+          : foundItems.map((item) => (
+              <li key={item._id}>
+                <Button onClick={() => handleOnSaveShoppingItem(item)}>
+                  {item.name.de}
+                </Button>
+              </li>
+            ))}
       </ListenContainer>
     </AppContainer>
   );
 }
 
 const AppContainer = styled.div`
-  margin: 1rem;
+  margin: 2rem;
 `;
 
 const ListenContainer = styled.ul`
+  list-style: none;
   display: flex;
   flex-wrap: wrap;
+  gap: 0.5rem;
 `;
 
-export default App;
+const ShoppingItem = styled.li`
+  list-style: none;
+`;
+
+const Button = styled.button`
+  padding: 1rem;
+  background-color: lightgreen;
+  border-radius: 10px;
+`;
+
+const Form = styled.form`
+  margin: 1rem;
+  padding: 1rem;
+`;
